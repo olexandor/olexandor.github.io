@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html><head>
+  <meta charset="utf-8">
+  <script>
+    window.onerror = function (msg, url, line, col) {
+      window.parent.postMessage(JSON.stringify({
+        type: "js_error",
+        message: msg,
+        line,
+        col,
+        url
+      }));
+    };
+  </script>
+
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_turnstileCb" async="" defer="" onerror="window.parent.postMessage('SCRIPT_LOAD_ERROR')">
+  </script>
+</head>
+
+<body>
+<div id="myWidget"></div>
+
+<script>
+  function log(msg, extra) {
+    window.parent.postMessage(JSON.stringify({
+      type: "log",
+      msg,
+      extra
+    }));
+  }
+
+  function _turnstileCb() {
+    log("_turnstileCb called — API loaded");
+
+    try {
+      turnstile.render("#myWidget", {
+        sitekey: "0x4AAAAAACMMHgZhglHl2sxe",
+
+        callback: (token) => {
+          log("Token received", token);
+          window.parent.postMessage(JSON.stringify({
+            type: "success",
+            token
+          }));
+        },
+
+        "expired-callback": () => {
+          log("Token expired");
+          window.parent.postMessage(JSON.stringify({
+            type: "expired"
+          }));
+        },
+
+        "error-callback": (code) => {
+          log("Turnstile widget error", code);
+          window.parent.postMessage(JSON.stringify({
+            type: "turnstile_error",
+            code
+          }));
+        }
+      });
+    } catch (e) {
+      log("Render error", e.toString());
+      window.parent.postMessage(JSON.stringify({
+        type: "render_error",
+        message: e.toString()
+      }));
+    }
+  }
+
+  document.addEventListener("message", function (event) {
+    if (event.data !== "reset") return;
+
+    try {
+      turnstile.reset();
+      log("Turnstile reset executed");
+    } catch (e) {
+      log("Reset error", e.toString());
+      window.parent.postMessage(JSON.stringify({
+        type: "reset_error",
+        message: e.toString()
+      }));
+    }
+  });
+</script>
+</body></html>
